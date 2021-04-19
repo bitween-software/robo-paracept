@@ -1,27 +1,33 @@
 <?php
 
-class SplitTestsByGroupsTaskTest extends \PHPUnit\Framework\TestCase
+use Codeception\Task\SplitTestsByGroups;
+use Consolidation\Log\Logger;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\NullOutput;
+
+class SplitTestsByGroupsTaskTest extends TestCase
 {
-    use \Codeception\Task\SplitTestsByGroups;
+    use SplitTestsByGroups;
 
     public function testGroupsCanBeSplit()
     {
         $task = new Codeception\Task\SplitTestsByGroupsTask(10);
-        $task->setLogger(new \Consolidation\Log\Logger(new \Symfony\Component\Console\Output\NullOutput()));
+        $task->setLogger(new Logger(new NullOutput()));
         $task->testsFrom('vendor/codeception/base/tests/unit/Codeception/Command')
             ->groupsTo('tests/result/group_')
             ->run();
 
         for ($i = 1; $i <= 10; $i++) {
-            $this->assertFileExists("tests/result/group_$i");
+            self::assertFileExists("tests/result/group_$i");
         }
-        $this->assertFileNotExists("tests/result/group_11");
+        self::assertFileNotExists("tests/result/group_11");
     }
 
     public function testSplitFilesByGroups()
     {
         $task = new Codeception\Task\SplitTestsByGroupsTask(5);
-        $task->setLogger(new \Consolidation\Log\Logger(new \Symfony\Component\Console\Output\NullOutput()));
+        $task->setLogger(new Logger(new NullOutput()));
         $task->testsFrom('vendor/codeception/base/tests/unit/Codeception/Command')
             ->projectRoot('vendor/codeception/base/')
             ->groupsTo('tests/result/group_')
@@ -39,8 +45,8 @@ class SplitTestsByGroupsTaskTest extends \PHPUnit\Framework\TestCase
      */
     public function testCircularDependencyDetectionAndHandling(){
         $task = new Codeception\Task\SplitTestsByGroupsTask(5);
-        $output = new \Symfony\Component\Console\Output\BufferedOutput();
-        $task->setLogger(new \Consolidation\Log\Logger($output));
+        $output = new BufferedOutput();
+        $task->setLogger(new Logger($output));
         $task->testsFrom('tests/fixtures/DependencyResolutionExampleTests2')
             ->projectRoot('vendor/codeception/base/')
             ->groupsTo('tests/result/group_')
@@ -48,10 +54,10 @@ class SplitTestsByGroupsTaskTest extends \PHPUnit\Framework\TestCase
 
         $d = $output->fetch();
 
-        self::assertContains('Circular dependency:', $d);
+        self::assertStringContainsString('Circular dependency:', $d);
 
         // make sure that no files were generated.
-        $this->assertEmpty(glob("tests/result/group_*"));
+        self::assertEmpty(glob("tests/result/group_*"));
     }
 
     /**
@@ -62,15 +68,15 @@ class SplitTestsByGroupsTaskTest extends \PHPUnit\Framework\TestCase
     public function testDependencyResolving(){
 
         $task = new Codeception\Task\SplitTestsByGroupsTask(2);
-        $output = new \Symfony\Component\Console\Output\BufferedOutput();
-        $task->setLogger(new \Consolidation\Log\Logger($output));
+        $output = new BufferedOutput();
+        $task->setLogger(new Logger($output));
 
         $task->testsFrom('tests/fixtures/DependencyResolutionExampleTests')
              ->projectRoot('vendor/codeception/base/')
              ->groupsTo('tests/result/group_')
              ->run();
         for ($i = 1; $i <= 2; $i++) {
-            $this->assertFileExists("tests/result/group_$i");
+            self::assertFileExists("tests/result/group_$i");
         }
 
         // because path might be different on every system we need only last part of the path.
@@ -92,7 +98,7 @@ class SplitTestsByGroupsTaskTest extends \PHPUnit\Framework\TestCase
         self::assertSame(['Example2Test.php:testE', 'Example2Test.php:testD', 'Example3Test.php:testF', 'Example3Test.php:testG'], $lines);
     }
 
-    public function setUp()
+    protected function setUp(): void
     {
         @mkdir('tests/result');
 
@@ -104,7 +110,4 @@ class SplitTestsByGroupsTaskTest extends \PHPUnit\Framework\TestCase
             }
         }
     }
-
-
-
 }
